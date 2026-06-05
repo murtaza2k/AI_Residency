@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -60,7 +61,8 @@ def fetch_rss_items(days: int) -> list[FeedItem]:
             resp = requests.get(url, timeout=20)
             resp.raise_for_status()
             root = ET.fromstring(resp.content)
-        except Exception:
+        except Exception as exc:
+            logging.warning("Failed to fetch/parse feed %s (%s): %s", source, url, exc)
             continue
 
         # RSS
@@ -94,7 +96,8 @@ def fetch_recent_kev(days: int) -> list[dict]:
         resp = requests.get(KEV_URL, timeout=30)
         resp.raise_for_status()
         payload = resp.json()
-    except Exception:
+    except Exception as exc:
+        logging.warning("Failed to fetch/parse CISA KEV feed: %s", exc)
         return []
 
     recent: list[dict] = []
@@ -160,15 +163,19 @@ def generate_with_llm(prompt: str) -> str | None:
         return None
     client = OpenAI(api_key=api_key)
     model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
-    response = client.chat.completions.create(
-        model=model,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.2,
-    )
-    content = response.choices[0].message.content
-    if not content:
+    try:
+        response = client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.2,
+        )
+        content = response.choices[0].message.content
+        if not content:
+            return None
+        return content.strip()
+    except Exception as exc:
+        logging.warning("LLM generation failed, using fallback report: %s", exc)
         return None
-    return content.strip()
 
 
 def fallback_report(feed_items: list[FeedItem], kev_items: list[dict], days: int) -> str:
@@ -232,6 +239,7 @@ def write_report(content: str) -> Path:
 
 
 def main() -> None:
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     days = int(os.getenv("LOOKBACK_DAYS", "1"))
     feed_items = fetch_rss_items(days)
     kev_items = fetch_recent_kev(days)

@@ -24,24 +24,32 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Generate daily cybersecurity summary
+        id: generate
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL: gpt-4o-mini
           LOOKBACK_DAYS: "1"
-        run: python scripts/daily_cybersecurity_agent.py
+        run: |
+          python scripts/daily_cybersecurity_agent.py | tee /tmp/summary_output.log
+          REPORT_PATH="$(grep 'Report written to:' /tmp/summary_output.log | awk '{print $4}')"
+          if [ -z "$REPORT_PATH" ] || [ ! -f "$REPORT_PATH" ]; then
+            echo "Failed to resolve generated report path."
+            exit 1
+          fi
+          echo "report_path=$REPORT_PATH" >> "$GITHUB_OUTPUT"
 
       - name: Upload report artifact
         uses: actions/upload-artifact@v4
         with:
           name: cybersecurity-summary
-          path: reports/daily/*.md
+          path: ${{ steps.generate.outputs.report_path }}
           if-no-files-found: error
 
       - name: Commit report if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add reports/daily/*.md
+          git add "${{ steps.generate.outputs.report_path }}"
           if git diff --cached --quiet; then
             echo "No report changes to commit."
             exit 0
