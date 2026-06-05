@@ -11,9 +11,9 @@ This repository now includes a daily AI agent that generates a cybersecurity sum
 
 ## Files added
 
-- `/tmp/workspace/murtaza2k/AI_Residency/scripts/daily_cybersecurity_agent.py`
-- `/tmp/workspace/murtaza2k/AI_Residency/.github/workflows/daily-cybersecurity-summary.yml`
-- `/tmp/workspace/murtaza2k/AI_Residency/requirements.txt`
+- `scripts/daily_cybersecurity_agent.py`
+- `.github/workflows/daily-cybersecurity-summary.yml`
+- `requirements.txt`
 
 ## Required secret
 
@@ -26,7 +26,7 @@ If the key is not set, the script still runs and generates a deterministic fallb
 ## Run manually (local)
 
 ```bash
-cd /tmp/workspace/murtaza2k/AI_Residency
+cd AI_Residency
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -35,7 +35,7 @@ OPENAI_API_KEY=your_key python scripts/daily_cybersecurity_agent.py
 
 Output is written to:
 
-- `/tmp/workspace/murtaza2k/AI_Residency/reports/daily/cybersecurity-summary-YYYY-MM-DD.md`
+- `reports/daily/cybersecurity-summary-YYYY-MM-DD.md`
 
 ## Schedule
 

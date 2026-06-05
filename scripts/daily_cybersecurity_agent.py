@@ -160,12 +160,15 @@ def generate_with_llm(prompt: str) -> str | None:
         return None
     client = OpenAI(api_key=api_key)
     model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
-    response = client.responses.create(
+    response = client.chat.completions.create(
         model=model,
-        input=prompt,
+        messages=[{"role": "user", "content": prompt}],
         temperature=0.2,
     )
-    return response.output_text.strip()
+    content = response.choices[0].message.content
+    if not content:
+        return None
+    return content.strip()
 
 
 def fallback_report(feed_items: list[FeedItem], kev_items: list[dict], days: int) -> str:
